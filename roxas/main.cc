@@ -84,7 +84,17 @@ int main(int argc, char** argv)
         simdjson::ondemand::parser parser;
         auto doc = parser.iterate(ast_as_json);
 
-        roxas::util::recursive_print_json(doc);
+        roxas::util::recursive_walk_json(
+            doc, [=](roxas::util::json_value element) {
+                switch (element.type()) {
+                    case roxas::util::json_ondemand::json_type::array:
+                        for (auto child : element.get_array()) {
+                            std::cout << "array element: " << child.value()
+                                      << std::endl;
+                        }
+                        break;
+                }
+            });
 
     } catch (std::runtime_error& e) {
         std::cerr << "Runtime Exception :: " << e.what() << std::endl;

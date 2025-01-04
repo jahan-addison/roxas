@@ -16,6 +16,7 @@
 
 #pragma once
 #include <filesystem>
+#include <functional>
 #include <simdjson.h>
 
 namespace roxas {
@@ -24,12 +25,27 @@ namespace util {
 
 namespace fs = std::filesystem;
 
+namespace json = simdjson;
+
+namespace json_ondemand = simdjson::ondemand;
+
+using json_value = json_ondemand::value;
+
+/**
+ * @brief Recursively walk abd call `callee` on a simdjson::ondemand json
+ * element
+ *
+ * @param element
+ */
+void recursive_walk_json(json_value element,
+                         std::function<void(json_value)> callee);
+
 /**
  * @brief Recursively print a simdjson::ondemand json element
  *
  * @param element
  */
-void recursive_print_json(simdjson::ondemand::value element);
+void recursive_print_json(json_value element);
 
 /**
  * @brief read a file from a fs::path

@@ -21,16 +21,43 @@ namespace roxas {
 
 namespace util {
 
+void recursive_walk_json(json_value element,
+                         std::function<void(json_value)> callee)
+{
+    switch (element.type()) {
+        case json_ondemand::json_type::array:
+            for (auto child : element.get_array()) {
+                auto value = child.value();
+                callee(value);
+                recursive_walk_json(value, callee);
+            }
+            break;
+        case json_ondemand::json_type::object:
+            for (auto field : element.get_object()) {
+                auto field = field.value();
+                callee(field);
+                recursive_walk_json(field, callee);
+            }
+            break;
+        case json_ondemand::json_type::number:
+        case json_ondemand::json_type::string:
+        case json_ondemand::json_type::boolean:
+        case json_ondemand::json_type::null:
+            callee(element);
+            break;
+    }
+}
+
 /**
- * @brief Recursively print a simdjson::ondemand json element
+ * @brief Recursively print a json_ondemand json element
  *
  * @param element
  */
-void recursive_print_json(simdjson::ondemand::value element)
+void recursive_print_json(json_value element)
 {
     bool add_comma;
     switch (element.type()) {
-        case simdjson::ondemand::json_type::array:
+        case json_ondemand::json_type::array:
             std::cout << "[";
             add_comma = false;
             for (auto child : element.get_array()) {
@@ -38,13 +65,13 @@ void recursive_print_json(simdjson::ondemand::value element)
                     std::cout << ",";
                 }
                 // We need the call to value() to get
-                // an simdjson::ondemand::value type.
+                // an json_ondemand::value type.
                 recursive_print_json(child.value());
                 add_comma = true;
             }
             std::cout << "]";
             break;
-        case simdjson::ondemand::json_type::object:
+        case json_ondemand::json_type::object:
             std::cout << "{";
             add_comma = false;
             for (auto field : element.get_object()) {
@@ -63,19 +90,19 @@ void recursive_print_json(simdjson::ondemand::value element)
             }
             std::cout << "}\n";
             break;
-        case simdjson::ondemand::json_type::number:
+        case json_ondemand::json_type::number:
             // assume it fits in a double
             std::cout << element.get_double();
             break;
-        case simdjson::ondemand::json_type::string:
+        case json_ondemand::json_type::string:
             // get_string() would return escaped string, but
             // we are happy with unescaped string.
             std::cout << "\"" << element.get_raw_json_string() << "\"";
             break;
-        case simdjson::ondemand::json_type::boolean:
+        case json_ondemand::json_type::boolean:
             std::cout << element.get_bool();
             break;
-        case simdjson::ondemand::json_type::null:
+        case json_ondemand::json_type::null:
             // We check that the value is indeed null
             // otherwise: an error is thrown.
             if (element.is_null()) {
