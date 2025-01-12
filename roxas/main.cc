@@ -85,7 +85,7 @@ int main(int argc, char** argv)
         auto doc = parser.iterate(ast_as_json);
 
         roxas::util::recursive_walk_json(
-            doc, [=](roxas::util::json_value element) {
+            doc, [&](roxas::util::json_value element) {
                 switch (element.type()) {
                     case roxas::util::json_ondemand::json_type::array:
                         for (auto child : element.get_array()) {

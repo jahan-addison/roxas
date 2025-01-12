@@ -22,28 +22,47 @@ namespace roxas {
 namespace util {
 
 void recursive_walk_json(json_value element,
-                         std::function<void(json_value)> callee)
+                         std::function<void(json_value)> callback)
 {
     switch (element.type()) {
         case json_ondemand::json_type::array:
             for (auto child : element.get_array()) {
-                auto value = child.value();
-                callee(value);
-                recursive_walk_json(value, callee);
+                // We need the call to value() to get
+                // an json_ondemand::value type.
+                recursive_walk_json(child.value());
             }
+            std::cout << "]";
             break;
         case json_ondemand::json_type::object:
             for (auto field : element.get_object()) {
-                auto field = field.value();
-                callee(field);
-                recursive_walk_json(field, callee);
+                // key() returns the key as it appears in the raw
+                // JSON document, if we want the unescaped key,
+                // we should do field.unescaped_key().
+                // We could also use field.escaped_key() if we want
+                // a std::string_view instance, but we do not need
+                // escaping.
+                std::cout << field std::cout << "\"" << field.key() << "\": ";
+                recursive_walk_json(field.value());
             }
             break;
         case json_ondemand::json_type::number:
+            // assume it fits in a double
+            std::cout << element.get_double();
+            break;
         case json_ondemand::json_type::string:
+            // get_string() would return escaped string, but
+            // we are happy with unescaped string.
+            std::cout << "\"" << element.get_raw_json_string() << "\"";
+            break;
         case json_ondemand::json_type::boolean:
+            std::cout << element.get_bool();
+            break;
         case json_ondemand::json_type::null:
-            callee(element);
+            // We check that the value is indeed null
+            // otherwise: an error is thrown.
+            if (element.is_null()) {
+                std::cout << "null";
+            }
             break;
     }
 }

@@ -32,13 +32,13 @@ namespace json_ondemand = simdjson::ondemand;
 using json_value = json_ondemand::value;
 
 /**
- * @brief Recursively walk abd call `callee` on a simdjson::ondemand json
+ * @brief Recursively walk abd call `callback` on a simdjson::ondemand json
  * element
  *
  * @param element
  */
 void recursive_walk_json(json_value element,
-                         std::function<void(json_value)> callee);
+                         std::function<void(json_value)> callback);
 
 /**
  * @brief Recursively print a simdjson::ondemand json element
