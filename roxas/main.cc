@@ -85,16 +85,24 @@ int main(int argc, char** argv)
         auto doc = parser.iterate(ast_as_json);
 
         roxas::util::recursive_walk_json(
-            doc, [&](roxas::util::json_value element) {
-                switch (element.type()) {
-                    case roxas::util::json_ondemand::json_type::array:
-                        for (auto child : element.get_array()) {
-                            std::cout << "array element: " << child.value()
-                                      << std::endl;
-                        }
-                        break;
-                }
-            });
+            doc,
+            [&](roxas::util::Leaf_Node element,
+                std::stack<roxas::util::Node_Type> stack) {
+                std::visit(roxas::util::overload{
+                               [](roxas::util::json_ondemand::array) {
+                                   std::cout << "found array" << std::endl;
+                               },
+                               [](roxas::util::json_ondemand::object) {
+                                   std::cout << "found object" << std::endl;
+                               },
+                               [](std::monostate) {
+                                   std::cout << "empty leaf" << std::endl;
+                               },
+
+                           },
+                           element);
+            },
+            {});
 
     } catch (std::runtime_error& e) {
         std::cerr << "Runtime Exception :: " << e.what() << std::endl;

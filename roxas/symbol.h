@@ -20,6 +20,8 @@
 #include <roxas/util.h>
 #include <string>
 #include <unordered_map>
+#include <variant>
+
 namespace roxas {
 /**
  * @brief Symbol table object
@@ -38,6 +40,13 @@ namespace roxas {
  */
 class Symbol_Table
 {
+  public:
+    using Leaf_Node = std::variant<util::json_ondemand::array,
+                                   util::json_ondemand::object,
+                                   std::nullptr_t>;
+    using Node_Type =
+        std::variant<util::json_ondemand::array, std::string_view>;
+
   public:
     Symbol_Table& operator=(Symbol_Table const&) = delete;
     Symbol_Table(Symbol_Table const&) = delete;

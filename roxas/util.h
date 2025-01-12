@@ -18,10 +18,22 @@
 #include <filesystem>
 #include <functional>
 #include <simdjson.h>
+#include <stack>
+#include <string_view>
+#include <variant>
 
 namespace roxas {
 
 namespace util {
+
+// The overload pattern
+template<class... Ts>
+struct overload : Ts...
+{
+    using Ts::operator()...;
+};
+template<class... Ts>
+overload(Ts...) -> overload<Ts...>;
 
 namespace fs = std::filesystem;
 
@@ -31,14 +43,20 @@ namespace json_ondemand = simdjson::ondemand;
 
 using json_value = json_ondemand::value;
 
+using Leaf_Node =
+    std::variant<json_ondemand::array, json_ondemand::object, std::monostate>;
+using Node_Type = std::variant<json_ondemand::array, std::string_view>;
+
 /**
  * @brief Recursively walk abd call `callback` on a simdjson::ondemand json
  * element
  *
  * @param element
  */
-void recursive_walk_json(json_value element,
-                         std::function<void(json_value)> callback);
+void recursive_walk_json(
+    json_value element,
+    std::function<void(Leaf_Node, std::stack<Node_Type>)> callback,
+    std::stack<Node_Type> call_stack);
 
 /**
  * @brief Recursively print a simdjson::ondemand json element

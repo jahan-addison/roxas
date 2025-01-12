@@ -21,50 +21,96 @@ namespace roxas {
 
 namespace util {
 
-void recursive_walk_json(json_value element,
-                         std::function<void(json_value)> callback)
+/**
+ * @brief Recursively walk and run a callback on elements on the AST JSON
+ *
+ * The ast class (from python):
+ *
+ * class AST_Node(TypedDict):
+ *      """The AST data structure"""
+ *      node: Node_Type
+ *      root: Node_Root
+ *      left: NotRequired[Node]
+ *      right: NotRequired[Node]
+ *      _meta: NotRequired[_Meta]
+ *
+ * @param element simdjson::ondemand::element The AST root
+ * @param callback the function to call on leafs
+ */
+void recursive_walk_json(
+    json_value element,
+    std::function<void(Leaf_Node, std::stack<Node_Type>)> callback,
+    std::stack<Node_Type> call_stack)
 {
-    switch (element.type()) {
+
+    Node_Type root_data{};
+    Node_Type node_data{};
+    Leaf_Node left_node{};
+    Leaf_Node right_node{};
+
+    auto root = element["root"];
+    auto node = element["node"];
+    auto left = element["left"];
+    auto right = element["right"];
+
+    // auto meta = element["_meta"];
+
+    switch (node.type()) {
         case json_ondemand::json_type::array:
-            for (auto child : element.get_array()) {
-                // We need the call to value() to get
-                // an json_ondemand::value type.
-                recursive_walk_json(child.value());
-            }
-            std::cout << "]";
-            break;
-        case json_ondemand::json_type::object:
-            for (auto field : element.get_object()) {
-                // key() returns the key as it appears in the raw
-                // JSON document, if we want the unescaped key,
-                // we should do field.unescaped_key().
-                // We could also use field.escaped_key() if we want
-                // a std::string_view instance, but we do not need
-                // escaping.
-                std::cout << field std::cout << "\"" << field.key() << "\": ";
-                recursive_walk_json(field.value());
-            }
-            break;
-        case json_ondemand::json_type::number:
-            // assume it fits in a double
-            std::cout << element.get_double();
+            node_data = root.get_array();
             break;
         case json_ondemand::json_type::string:
-            // get_string() would return escaped string, but
-            // we are happy with unescaped string.
-            std::cout << "\"" << element.get_raw_json_string() << "\"";
+            node_data = root.get_string();
             break;
-        case json_ondemand::json_type::boolean:
-            std::cout << element.get_bool();
+        default:
+            throw std::runtime_error("node element invalid type");
+    }
+
+    switch (root.type()) {
+        case json_ondemand::json_type::array:
+            root_data = root.get_array();
             break;
-        case json_ondemand::json_type::null:
-            // We check that the value is indeed null
-            // otherwise: an error is thrown.
-            if (element.is_null()) {
-                std::cout << "null";
+        case json_ondemand::json_type::string:
+            root_data = root.get_string();
+            break;
+        default:
+            throw std::runtime_error("root element invalid type");
+    }
+
+    call_stack.push(node_data);
+
+    switch (left.type()) {
+        case json_ondemand::json_type::array:
+            for (auto child : left.get_array()) {
+                recursive_walk_json(child.value(), callback, call_stack);
             }
             break;
+        case json_ondemand::json_type::object:
+            left_node = root.get_object();
+            callback(left_node, call_stack);
+            break;
+        case json_ondemand::json_type::null:
+            break;
+        default:
+            throw std::runtime_error("left element invalid type");
     }
+
+    switch (right.type()) {
+        case json_ondemand::json_type::array:
+            for (auto child : right.get_array()) {
+                recursive_walk_json(child.value(), callback, call_stack);
+            }
+        case json_ondemand::json_type::object:
+            right_node = right.get_object();
+            callback(right_node, call_stack);
+            break;
+        case json_ondemand::json_type::null:
+            break;
+        default:
+            throw std::runtime_error("right element invalid type");
+    }
+
+    call_stack.pop();
 }
 
 /**
